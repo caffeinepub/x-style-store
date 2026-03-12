@@ -1,0 +1,118 @@
+@font-face {
+  font-family: "Fraunces";
+  src: url("/assets/fonts/Fraunces.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "General Sans";
+  src: url("/assets/fonts/GeneralSans.woff2") format("woff2");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0.99 0 0;
+    --foreground: 0.12 0.01 30;
+    --card: 0.99 0 0;
+    --card-foreground: 0.12 0.01 30;
+    --popover: 1 0 0;
+    --popover-foreground: 0.12 0.01 30;
+    --primary: 0.15 0.01 30;
+    --primary-foreground: 0.99 0 0;
+    --secondary: 0.96 0.005 60;
+    --secondary-foreground: 0.15 0.01 30;
+    --muted: 0.96 0.005 60;
+    --muted-foreground: 0.5 0.01 30;
+    --accent: 0.94 0.015 20;
+    --accent-foreground: 0.15 0.01 30;
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 0.99 0 0;
+    --border: 0.9 0.005 60;
+    --input: 0.9 0.005 60;
+    --ring: 0.15 0.01 30;
+    --radius: 0.25rem;
+    --chart-1: 0.65 0.18 30;
+    --chart-2: 0.65 0.15 200;
+    --chart-3: 0.65 0.15 260;
+    --chart-4: 0.65 0.18 100;
+    --chart-5: 0.65 0.18 60;
+    --sidebar: 0.99 0 0;
+    --sidebar-foreground: 0.12 0.01 30;
+    --sidebar-primary: 0.15 0.01 30;
+    --sidebar-primary-foreground: 0.99 0 0;
+    --sidebar-accent: 0.94 0.015 20;
+    --sidebar-accent-foreground: 0.15 0.01 30;
+    --sidebar-border: 0.9 0.005 60;
+    --sidebar-ring: 0.15 0.01 30;
+
+    /* Fashion brand custom tokens */
+    --brand-rose: 0.82 0.06 15;
+    --brand-warm: 0.97 0.01 50;
+    --brand-discount: 0.62 0.15 25;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "General Sans", sans-serif;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: "Fraunces", serif;
+  }
+}
+
+@layer utilities {
+  .product-image-hover .img-primary {
+    transition: opacity 0.4s ease;
+    opacity: 1;
+  }
+  .product-image-hover .img-secondary {
+    transition: opacity 0.4s ease;
+    opacity: 0;
+    position: absolute;
+    inset: 0;
+  }
+  .product-image-hover:hover .img-primary {
+    opacity: 0;
+  }
+  .product-image-hover:hover .img-secondary {
+    opacity: 1;
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-4px);
+    }
+    40% {
+      transform: translateX(4px);
+    }
+    60% {
+      transform: translateX(-4px);
+    }
+    80% {
+      transform: translateX(4px);
+    }
+  }
+  .shake {
+    animation: shake 0.4s ease;
+  }
+}
