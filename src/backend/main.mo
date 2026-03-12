@@ -62,13 +62,63 @@ actor {
     address : ?Text;
   };
 
+  public type SocialLinks = {
+    email : ?Text;
+    whatsapp : ?Text;
+    instagram : ?Text;
+  };
+
   let products = Map.empty<Nat, Product>();
   let carts = Map.empty<Principal, Map.Map<Nat, CartItem>>();
   let wishlists = Map.empty<Principal, Set.Set<Nat>>();
   let userProfiles = Map.empty<Principal, UserProfile>();
 
+  var socialLinks : SocialLinks = { email = null; whatsapp = null; instagram = null };
+  var nextProductId : Nat = 100;
+
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
+
+  // Social Links
+  public query func getSocialLinks() : async SocialLinks {
+    socialLinks;
+  };
+
+  public shared ({ caller }) func saveSocialLinks(links : SocialLinks) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can update social links");
+    };
+    socialLinks := links;
+  };
+
+  // Admin Product CRUD
+  public shared ({ caller }) func addProduct(product : Product) : async Nat {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can add products");
+    };
+    let newId = nextProductId;
+    nextProductId += 1;
+    let newProduct = { product with id = newId };
+    products.add(newId, newProduct);
+    newId;
+  };
+
+  public shared ({ caller }) func updateProduct(product : Product) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can update products");
+    };
+    switch (products.get(product.id)) {
+      case (null) { Runtime.trap("Product not found") };
+      case (?_) { products.add(product.id, product) };
+    };
+  };
+
+  public shared ({ caller }) func deleteProduct(productId : Nat) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can delete products");
+    };
+    products.remove(productId);
+  };
 
   // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -224,26 +274,26 @@ actor {
     };
   };
 
-  // Product Queries (Public - accessible to all including guests)
-  public query ({ caller }) func getAllProducts() : async [Product] {
+  // Product Queries (Public)
+  public query func getAllProducts() : async [Product] {
     products.values().toArray().sort();
   };
 
-  public query ({ caller }) func getProductsByCategory(category : Text) : async [Product] {
+  public query func getProductsByCategory(category : Text) : async [Product] {
     let filtered = products.values().toArray().filter(
       func(product) { product.category == category }
     );
     filtered.sort();
   };
 
-  public query ({ caller }) func getProductById(productId : Nat) : async Product {
+  public query func getProductById(productId : Nat) : async Product {
     switch (products.get(productId)) {
       case (null) { Runtime.trap("Product does not exist") };
       case (?product) { product };
     };
   };
 
-  public query ({ caller }) func getBestsellers() : async [Product] {
+  public query func getBestsellers() : async [Product] {
     let filtered = products.values().toArray().filter(
       func(product) {
         switch (product.badge) {
@@ -255,195 +305,26 @@ actor {
     filtered.sort(Product.compareByRating);
   };
 
-  // Admin Functions
+  // Seed Products
   let sampleProducts = [
-    {
-      id = 1;
-      name = "Floral Print Top";
-      shortDescription = "Stylish floral print top";
-      longDescription = "A beautiful floral print top perfect for casual outings.";
-      category = "Tops";
-      sizes = ["S", "M", "L", "XL"];
-      price = 9999;
-      mrp = 14999;
-      discountPercent = 33;
-      rating = 4.7;
-      reviewCount = 150;
-      badge = ?"Best Seller";
-      imageCount = 3;
-    },
-    {
-      id = 2;
-      name = "Denim Co-ord Set";
-      shortDescription = "Trendy denim co-ord set";
-      longDescription = "A cool and comfortable denim co-ord set suitable for everyday wear.";
-      category = "Co-ord Sets";
-      sizes = ["XS", "S", "M", "L"];
-      price = 17599;
-      mrp = 25000;
-      discountPercent = 30;
-      rating = 4.2;
-      reviewCount = 65;
-      badge = null;
-      imageCount = 4;
-    },
-    {
-      id = 3;
-      name = "Cotton Kurti";
-      shortDescription = "Elegant cotton kurti";
-      longDescription = "A lightweight and breathable cotton kurti ideal for summers.";
-      category = "Ethnic Wear";
-      sizes = ["M", "L", "XL"];
-      price = 8999;
-      mrp = 11999;
-      discountPercent = 25;
-      rating = 4.5;
-      reviewCount = 70;
-      badge = ?"Best Seller";
-      imageCount = 2;
-    },
-    {
-      id = 4;
-      name = "Party Dress";
-      shortDescription = "Stylish party dress";
-      longDescription = "A beautiful dress suitable for parties and special occasions.";
-      category = "Party Wear";
-      sizes = ["S", "M", "L"];
-      price = 12999;
-      mrp = 16999;
-      discountPercent = 24;
-      rating = 4.3;
-      reviewCount = 100;
-      badge = null;
-      imageCount = 3;
-    },
-    {
-      id = 5;
-      name = "Puff-Sleeve Top";
-      shortDescription = "Trendy puff-sleeve design";
-      longDescription = "A fashionable top featuring trendy puff sleeves.";
-      category = "Tops";
-      sizes = ["S", "M", "L", "XL"];
-      price = 10999;
-      mrp = 13999;
-      discountPercent = 21;
-      rating = 4.6;
-      reviewCount = 80;
-      badge = null;
-      imageCount = 2;
-    },
-    {
-      id = 6;
-      name = "Printed Palazzo Set";
-      shortDescription = "Printed palazzo set for casual wear";
-      longDescription = "A comfortable set featuring a top and printed palazzo pants.";
-      category = "Co-ord Sets";
-      sizes = ["M", "L", "XL"];
-      price = 14999;
-      mrp = 19999;
-      discountPercent = 25;
-      rating = 4.2;
-      reviewCount = 45;
-      badge = null;
-      imageCount = 4;
-    },
-    {
-      id = 7;
-      name = "Casual Shirt";
-      shortDescription = "Versatile casual shirt";
-      longDescription = "A comfortable and versatile shirt suitable for various occasions.";
-      category = "Shirts";
-      sizes = ["S", "M", "L", "XL", "XXL"];
-      price = 8999;
-      mrp = 11999;
-      discountPercent = 25;
-      rating = 4.3;
-      reviewCount = 85;
-      badge = ?"Best Seller";
-      imageCount = 3;
-    },
-    {
-      id = 8;
-      name = "Maxi Dress";
-      shortDescription = "Elegant maxi dress for all occasions";
-      longDescription = "An elegant maxi dress suitable for both casual and formal events.";
-      category = "Dresses";
-      sizes = ["XS", "S", "M"];
-      price = 16499;
-      mrp = 21999;
-      discountPercent = 25;
-      rating = 4.1;
-      reviewCount = 60;
-      badge = null;
-      imageCount = 4;
-    },
-    {
-      id = 9;
-      name = "Kurta Set";
-      shortDescription = "Traditional kurta set";
-      longDescription = "A traditional kurta set perfect for festive occasions.";
-      category = "Ethnic Wear";
-      sizes = ["M", "L", "XL"];
-      price = 13999;
-      mrp = 18999;
-      discountPercent = 26;
-      rating = 4.5;
-      reviewCount = 55;
-      badge = null;
-      imageCount = 3;
-    },
-    {
-      id = 10;
-      name = "Mini Dress";
-      shortDescription = "Chic mini dress for parties";
-      longDescription = "A stylish and chic mini dress perfect for parties and outings.";
-      category = "Party Wear";
-      sizes = ["S", "M"];
-      price = 11499;
-      mrp = 14999;
-      discountPercent = 23;
-      rating = 4.6;
-      reviewCount = 90;
-      badge = null;
-      imageCount = 2;
-    },
-    {
-      id = 11;
-      name = "Sheer Top";
-      shortDescription = "Sheer fabric top for layering";
-      longDescription = "A sheer fabric top ideal for layering and adding style.";
-      category = "Tops";
-      sizes = ["S", "M", "L"];
-      price = 8999;
-      mrp = 12999;
-      discountPercent = 31;
-      rating = 4.5;
-      reviewCount = 40;
-      badge = null;
-      imageCount = 3;
-    },
-    {
-      id = 12;
-      name = "Plaid Shirt";
-      shortDescription = "Classic plaid pattern shirt";
-      longDescription = "A timeless plaid pattern shirt suitable for any occasion.";
-      category = "Shirts";
-      sizes = ["M", "L", "XL"];
-      price = 10999;
-      mrp = 14999;
-      discountPercent = 27;
-      rating = 4.4;
-      reviewCount = 75;
-      badge = ?"Best Seller";
-      imageCount = 4;
-    },
+    { id = 1; name = "Floral Print Top"; shortDescription = "Stylish floral print top"; longDescription = "A beautiful floral print top perfect for casual outings."; category = "Tops"; sizes = ["S", "M", "L", "XL"]; price = 9999; mrp = 14999; discountPercent = 33; rating = 4.7; reviewCount = 150; badge = ?"Best Seller"; imageCount = 3 },
+    { id = 2; name = "Denim Co-ord Set"; shortDescription = "Trendy denim co-ord set"; longDescription = "A cool and comfortable denim co-ord set suitable for everyday wear."; category = "Co-ord Sets"; sizes = ["XS", "S", "M", "L"]; price = 17599; mrp = 25000; discountPercent = 30; rating = 4.2; reviewCount = 65; badge = null; imageCount = 4 },
+    { id = 3; name = "Cotton Kurti"; shortDescription = "Elegant cotton kurti"; longDescription = "A lightweight and breathable cotton kurti ideal for summers."; category = "Ethnic Wear"; sizes = ["M", "L", "XL"]; price = 8999; mrp = 11999; discountPercent = 25; rating = 4.5; reviewCount = 70; badge = ?"Best Seller"; imageCount = 2 },
+    { id = 4; name = "Party Dress"; shortDescription = "Stylish party dress"; longDescription = "A beautiful dress suitable for parties and special occasions."; category = "Party Wear"; sizes = ["S", "M", "L"]; price = 12999; mrp = 16999; discountPercent = 24; rating = 4.3; reviewCount = 100; badge = null; imageCount = 3 },
+    { id = 5; name = "Puff-Sleeve Top"; shortDescription = "Trendy puff-sleeve design"; longDescription = "A fashionable top featuring trendy puff sleeves."; category = "Tops"; sizes = ["S", "M", "L", "XL"]; price = 10999; mrp = 13999; discountPercent = 21; rating = 4.6; reviewCount = 80; badge = null; imageCount = 2 },
+    { id = 6; name = "Printed Palazzo Set"; shortDescription = "Printed palazzo set for casual wear"; longDescription = "A comfortable set featuring a top and printed palazzo pants."; category = "Co-ord Sets"; sizes = ["M", "L", "XL"]; price = 14999; mrp = 19999; discountPercent = 25; rating = 4.2; reviewCount = 45; badge = null; imageCount = 4 },
+    { id = 7; name = "Casual Shirt"; shortDescription = "Versatile casual shirt"; longDescription = "A comfortable and versatile shirt suitable for various occasions."; category = "Shirts"; sizes = ["S", "M", "L", "XL", "XXL"]; price = 8999; mrp = 11999; discountPercent = 25; rating = 4.3; reviewCount = 85; badge = ?"Best Seller"; imageCount = 3 },
+    { id = 8; name = "Maxi Dress"; shortDescription = "Elegant maxi dress for all occasions"; longDescription = "An elegant maxi dress suitable for both casual and formal events."; category = "Dresses"; sizes = ["XS", "S", "M"]; price = 16499; mrp = 21999; discountPercent = 25; rating = 4.1; reviewCount = 60; badge = null; imageCount = 4 },
+    { id = 9; name = "Kurta Set"; shortDescription = "Traditional kurta set"; longDescription = "A traditional kurta set perfect for festive occasions."; category = "Ethnic Wear"; sizes = ["M", "L", "XL"]; price = 13999; mrp = 18999; discountPercent = 26; rating = 4.5; reviewCount = 55; badge = null; imageCount = 3 },
+    { id = 10; name = "Mini Dress"; shortDescription = "Chic mini dress for parties"; longDescription = "A stylish and chic mini dress perfect for parties and outings."; category = "Party Wear"; sizes = ["S", "M"]; price = 11499; mrp = 14999; discountPercent = 23; rating = 4.6; reviewCount = 90; badge = null; imageCount = 2 },
+    { id = 11; name = "Sheer Top"; shortDescription = "Sheer fabric top for layering"; longDescription = "A sheer fabric top ideal for layering and adding style."; category = "Tops"; sizes = ["S", "M", "L"]; price = 8999; mrp = 12999; discountPercent = 31; rating = 4.5; reviewCount = 40; badge = null; imageCount = 3 },
+    { id = 12; name = "Plaid Shirt"; shortDescription = "Classic plaid pattern shirt"; longDescription = "A timeless plaid pattern shirt suitable for any occasion."; category = "Shirts"; sizes = ["M", "L", "XL"]; price = 10999; mrp = 14999; discountPercent = 27; rating = 4.4; reviewCount = 75; badge = ?"Best Seller"; imageCount = 4 },
   ];
 
   public shared ({ caller }) func seedProducts() : async () {
-    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admin can seed products");
     };
-
     for (product in sampleProducts.values()) {
       products.add(product.id, product);
     };

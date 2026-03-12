@@ -7,9 +7,11 @@ import {
 } from "@/components/ui/select";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Instagram, Mail, MessageCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Product } from "./backend.d.ts";
+import { AdminPanel } from "./components/AdminPanel";
 import { CartDrawer } from "./components/CartDrawer";
 import { CategoryCircles } from "./components/CategoryCircles";
 import { Navigation } from "./components/Navigation";
@@ -22,6 +24,7 @@ import {
   useCart,
   useRemoveFromCart,
   useSeedAndBestsellers,
+  useSocialLinks,
   useToggleWishlist,
   useUpdateCartQty,
   useWishlist,
@@ -42,6 +45,7 @@ function XStyleStoreApp() {
   const { data: allProducts = [], isLoading: apLoading } = useAllProducts();
   const { data: cartItems = [] } = useCart();
   const { data: wishlistIds = [] } = useWishlist();
+  const { data: socialLinks } = useSocialLinks();
 
   const addToCartMutation = useAddToCart();
   const removeFromCartMutation = useRemoveFromCart();
@@ -97,6 +101,14 @@ function XStyleStoreApp() {
       : activeCategory === "Bestsellers"
         ? "Bestsellers"
         : activeCategory;
+
+  const hasSocialLinks =
+    socialLinks &&
+    (socialLinks.email || socialLinks.whatsapp || socialLinks.instagram);
+
+  const igHandle = socialLinks?.instagram
+    ? socialLinks.instagram.replace(/^@/, "")
+    : "";
 
   return (
     <div className="min-h-screen bg-background">
@@ -186,26 +198,80 @@ function XStyleStoreApp() {
 
       {/* Footer */}
       <footer className="border-t border-border mt-16 py-8 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <img
-              src="/assets/generated/logo-transparent.dim_200x60.png"
-              alt="X-Style Store"
-              className="h-8 w-auto object-contain"
-            />
-            <p>Premium women's fashion — curated with care.</p>
+        <div className="max-w-7xl mx-auto space-y-5">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <img
+                src="/assets/generated/logo-transparent.dim_200x60.png"
+                alt="X-Style Store"
+                className="h-8 w-auto object-contain"
+              />
+              <p className="text-sm text-muted-foreground">
+                Premium women's fashion — curated with care.
+              </p>
+            </div>
+
+            {/* Social icons */}
+            {hasSocialLinks && (
+              <div className="flex items-center gap-4">
+                {socialLinks.email && (
+                  <a
+                    data-ocid="footer.email.link"
+                    href={`mailto:${socialLinks.email}`}
+                    aria-label="Email us"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Mail className="h-5 w-5" />
+                  </a>
+                )}
+                {socialLinks.whatsapp && (
+                  <a
+                    data-ocid="footer.whatsapp.link"
+                    href={`https://wa.me/${socialLinks.whatsapp.replace(/[^0-9]/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="WhatsApp"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                  </a>
+                )}
+                {igHandle && (
+                  <a
+                    data-ocid="footer.instagram.link"
+                    href={`https://instagram.com/${igHandle}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Instagram"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Instagram className="h-5 w-5" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
-          <p>
-            © {new Date().getFullYear()}. Built with ♥ using{" "}
+
+          <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-muted-foreground border-t border-border pt-4">
+            <p>
+              Built with ♥ using{" "}
+              <a
+                href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+                className="underline hover:text-foreground transition-colors"
+                target="_blank"
+                rel="noreferrer"
+              >
+                caffeine.ai
+              </a>
+            </p>
             <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              className="underline hover:text-foreground transition-colors"
-              target="_blank"
-              rel="noreferrer"
+              data-ocid="footer.admin.link"
+              href="#/admin"
+              className="hover:text-foreground transition-colors"
             >
-              caffeine.ai
+              Admin
             </a>
-          </p>
+          </div>
         </div>
       </footer>
 
@@ -234,10 +300,27 @@ function XStyleStoreApp() {
   );
 }
 
+function AppRouter() {
+  const hash = window.location.hash;
+  const [currentHash, setCurrentHash] = useState(hash);
+
+  useState(() => {
+    const handler = () => setCurrentHash(window.location.hash);
+    window.addEventListener("hashchange", handler);
+    return () => window.removeEventListener("hashchange", handler);
+  });
+
+  if (currentHash === "#/admin" || currentHash.startsWith("#/admin")) {
+    return <AdminPanel />;
+  }
+
+  return <XStyleStoreApp />;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <XStyleStoreApp />
+      <AppRouter />
     </QueryClientProvider>
   );
 }

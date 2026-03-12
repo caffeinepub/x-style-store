@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CartItem, Product } from "../backend.d.ts";
+import type { CartItem, Product } from "../backend";
 import { useActor } from "./useActor";
+
+export interface SocialLinks {
+  email?: string;
+  whatsapp?: string;
+  instagram?: string;
+}
 
 export function useSeedAndBestsellers() {
   const { actor, isFetching } = useActor();
@@ -58,6 +64,18 @@ export function useWishlist() {
     queryFn: async () => {
       if (!actor) return [];
       return actor.getWishlist();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useSocialLinks() {
+  const { actor, isFetching } = useActor();
+  return useQuery<SocialLinks>({
+    queryKey: ["socialLinks"],
+    queryFn: async () => {
+      if (!actor) return {};
+      return (actor as any).getSocialLinks();
     },
     enabled: !!actor && !isFetching,
   });

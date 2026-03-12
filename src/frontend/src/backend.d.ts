@@ -33,15 +33,22 @@ export interface Product {
     reviewCount: bigint;
     longDescription: string;
 }
+export interface SocialLinks {
+    email?: string;
+    whatsapp?: string;
+    instagram?: string;
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
     guest = "guest"
 }
 export interface backendInterface {
+    addProduct(product: Product): Promise<bigint>;
     addToCart(productId: bigint, size: string, quantity: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     clearCart(): Promise<void>;
+    deleteProduct(productId: bigint): Promise<void>;
     getAllProducts(): Promise<Array<Product>>;
     getBestsellers(): Promise<Array<Product>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
@@ -49,13 +56,16 @@ export interface backendInterface {
     getCart(): Promise<Array<CartItem>>;
     getProductById(productId: bigint): Promise<Product>;
     getProductsByCategory(category: string): Promise<Array<Product>>;
+    getSocialLinks(): Promise<SocialLinks>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     getWishlist(): Promise<Array<bigint>>;
     isCallerAdmin(): Promise<boolean>;
     isWishlisted(productId: bigint): Promise<boolean>;
     removeFromCart(productId: bigint): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    saveSocialLinks(links: SocialLinks): Promise<void>;
     seedProducts(): Promise<void>;
     toggleWishlist(productId: bigint): Promise<void>;
     updateCartQty(productId: bigint, newQuantity: bigint): Promise<void>;
+    updateProduct(product: Product): Promise<void>;
 }
